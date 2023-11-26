@@ -84,50 +84,28 @@ void inorderTraversal(struct TrieNode* root) {
 }
 // Функция для поиска слова, следующего за указанным в бинарном дереве
 char* findNextWord(TrieNode* root, const char* target) {
-    TrieNode* current = root;
-    TrieNode* next = NULL;
 
-    // Находим узел с заданным словом
-    while (current != NULL && strcmp(current->word, target) != 0) {
-        if (strcmp(target, current->word) < 0) {
-            next = current;
-            current = current->left;
-        }
-        else {
-            current = current->right;
-        }
+    // Если слово - последнее, возвращаем NULL
+    if (root == NULL) {
+        return NULL;
     }
 
-    if (current == NULL) {
-        return NULL;  // Слово не найдено
+    // Если слово меньше текущего корня, рекурсивно вызываем функцию для левого поддерева
+    if (strcmp(target, root->word) < 0) {
+        char* result = findNextWord(root->left, target);
+        // Если результат NULL, значит слово не найдено в левом поддереве, поэтому возвращаем текущий корень
+        if (result == NULL) {
+            return root->word;
+        }
+        // Если результат не NULL, значит слово найдено в левом поддереве, возвращаем результат
+        return result;
     }
-
-    // Если правое поддерево существует, то следующим будет слово, наименьшее в этом поддереве
-    if (current->right != NULL) {
-        next = current->right;
-        while (next->left != NULL) {
-            next = next->left;
-        }
-        return next->word;
-    }
-    if (current->right == NULL && current->left == NULL) {
-        return next->word;
-    }
-    if (current->right == NULL) {
-        // В противном случае, следующим будет самый низкий родитель, у которого текущее слово находится в левом поддереве
-        TrieNode* parent = current->parent;
-        while (parent != NULL && current == parent->right) {
-            current = parent;
-            parent = parent->parent;
-        }
-        if (parent != NULL) {
-            return parent->word;
-        }
-        else {
-            return NULL;  // Это слово было последним в алфавитном порядке
-        }
+    // Если слово больше или равно текущего корня, рекурсивно вызываем функцию для правого поддерева
+    else {
+        return findNextWord(root->right, target);
     }
 }
+
 
 TrieNode* deleteNode(TrieNode* root, char* wrd) {
     if (root == NULL) {
@@ -142,23 +120,35 @@ TrieNode* deleteNode(TrieNode* root, char* wrd) {
         if (root->left == NULL && root->right == NULL) {
             // Проверяем, является ли удаляемый узел листом (удаляем, если да)
             temp = root;
-            free(root);
+            //free(root);
             root = NULL;
-            return temp->parent;
+            //return temp->parent;
         }
         else if (root->left == NULL) {
             // Если удаляемый узел имеет только правого потомка
             temp = root;
-            root = root->right; //меняем указатель на корень на указатель правого потомка
-            free(temp);
-            return root;
+            if (root->parent != NULL) {
+                root->parent->left = root->right;
+                //return root->parent;
+            }
+            else {
+                root = root->right;
+                //return root;
+            }
+            //root = root->right; //меняем указатель на корень на указатель правого потомка
+
+            //free(temp);
         }
         else if (root->right == NULL) {
             // Если удаляемый узел имеет только левого потомка
             temp = root;
-            root = root->left; //меняем указатель на корень на указатель левого потомка
-            free(temp);
-            return root;
+            if (root->parent != NULL) {
+                root->parent->right = root->left; return root->parent;
+            }
+            else {
+                root = root->left;
+                //return root;
+            }
         }
         else {
             // Если удаляемый узел имеет и левого, и правого потомков
@@ -179,6 +169,7 @@ TrieNode* deleteNode(TrieNode* root, char* wrd) {
     else {
         deleteNode(root->right, wrd);
     }
+    return root;
 }
 TrieNode* copyTree(TrieNode* from) {
     if (from == NULL) {
@@ -210,6 +201,13 @@ TrieNode* copyTree(TrieNode* from) {
 
         }
     }
+}
+char* findFirstWord(struct TrieNode* root) {
+    // Перемещаемся в крайний левый узел, который будет содержать самое первое слово
+    while (root->left != NULL) {
+        root = root->left;
+    }
+    return root->word;
 }
 
 ///////////////////////////////////////
@@ -359,103 +357,120 @@ int set_board(int words_count, struct TrieNode* root, char** board_copy, int bh,
     if (flag == 0) {
 
         ////////////// ПОЧТИ ПОРАВИЛА ///////////////////////////////////////////////////////////////////////
-        for (tmp_word = root_copy->word; k < words_count; tmp_word = findNextWord(root_copy, tmp_word)) {
-            int tmp_i = 0;
-            int tmp_j = 0;
-            int orient = -1;
+        for (tmp_word = findFirstWord(root_copy); k < words_count; tmp_word = findNextWord(root_copy, tmp_word)) {
+            if (tmp_word != NULL) {
+                //идет на юрисдикцию в начале цикла фор, хотя, по хорошему должен идти в самый левый узел
+                int tmp_i = 0;
+                int tmp_j = 0;
+                int orient = -1;
 
-            int tmp_len = strlen(tmp_word);
-            for (int j = 0; j < tmp_len; j++) {
-                for (int i_board = 0; i_board < bh; i_board++) {
-                    for (int j_board = 0; j_board < bw; j_board++) {
-                        if (board_copy1[i_board][j_board] == tmp_word[j]) {
-                            check = Check_Set(j, tmp_len, i_board, j_board, board_copy1, bh, bw, tmp_word);
-                            int tekPeres = 0;
-                            tekPeres = peres;
-                            peres = 0;
-                            if (tekPeres < min_peres && check >= 0) {
-                                min_peres = tekPeres;
-                                if (check == 1) {
-                                    tmp_i = i_board - j;
-                                    tmp_j = j_board;
-                                    orient = 1;
+                int tmp_len = strlen(tmp_word);
+                for (int j = 0; j < tmp_len; j++) {
+                    for (int i_board = 0; i_board < bh; i_board++) {
+                        for (int j_board = 0; j_board < bw; j_board++) {
+                            if (board_copy1[i_board][j_board] == tmp_word[j]) {
+                                check = Check_Set(j, tmp_len, i_board, j_board, board_copy1, bh, bw, tmp_word);
+                                int tekPeres = 0;
+                                tekPeres = peres;
+                                peres = 0;
+                                if (tekPeres < min_peres && check >= 0) {
+                                    min_peres = tekPeres;
+                                    if (check == 1) {
+                                        tmp_i = i_board - j;
+                                        tmp_j = j_board;
+                                        orient = 1;
 
-                                }
-                                else {
-                                    tmp_i = i_board;
-                                    tmp_j = j_board - j;
-                                    orient = 0;
+                                    }
+                                    else {
+                                        tmp_i = i_board;
+                                        tmp_j = j_board - j;
+                                        orient = 0;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            if ((tmp_i != 0) && (tmp_j != 0)) {
-                for (int l = 0; tmp_word[l] != NULL; l++) {
-                    if (orient == 1) {
-                        board_copy1[tmp_i + l][tmp_j] = tmp_word[l];
+                if ((tmp_i != 0) && (tmp_j != 0)) {
+                    for (int l = 0; tmp_word[l] != NULL; l++) {
+                        if (orient == 1) {
+                            board_copy1[tmp_i + l][tmp_j] = tmp_word[l];
+                        }
+                        else {
+                            board_copy1[tmp_i][tmp_j + l] = tmp_word[l];
+                        }
                     }
-                    else {
-                        board_copy1[tmp_i][tmp_j + l] = tmp_word[l];
-                    }
+                    char cpy_of_tmp_word[20];
+                    strcpy(cpy_of_tmp_word, tmp_word);
+                    root_copy = deleteNode(root_copy, tmp_word);
+                    strcpy(tmp_word, cpy_of_tmp_word);
+                    crossing += min_peres;
+                    min_peres = 10;
                 }
-                deleteNode(root_copy, tmp_word);
-                crossing += min_peres;
-                min_peres = 10;
+                k++;
             }
-            k++;
+            else {
+                break;
+            }
+
         }
         copy_board(board_copy1, board_copy, bh, bw);
     }
     ///////////////////////////////////////////////////////////////////////////////////
     else {
-        for (tmp_word = root_copy->word; k < words_count; tmp_word = findNextWord(root_copy, tmp_word)) {
+        for (tmp_word = findFirstWord(root_copy); k < words_count; tmp_word = findNextWord(root_copy, tmp_word)) {
+            if (tmp_word != NULL) {
+                int tmp_i = 0;
+                int tmp_j = 0;
+                int orient = -1;
 
-            int tmp_i = 0;
-            int tmp_j = 0;
-            int orient = -1;
+                int tmp_len = strlen(tmp_word);
+                for (int j = 0; j < tmp_len; j++) {
+                    for (int i_board = 0; i_board < bh; i_board++) {
+                        for (int j_board = 0; j_board < bw; j_board++) {
+                            if (board_copy1[i_board][j_board] == tmp_word[j]) {
+                                check = Check_Set(j, tmp_len, i_board, j_board, board_copy1, bh, bw, tmp_word);
+                                int tekPeres = 0;
+                                tekPeres = peres;
+                                peres = 0;
+                                if (tekPeres > max_peres && check >= 0) {
+                                    max_peres = tekPeres;
+                                    if (check == 1) {
+                                        tmp_i = i_board - j;
+                                        tmp_j = j_board;
+                                        orient = 1;
 
-            int tmp_len = strlen(tmp_word);
-            for (int j = 0; j < tmp_len; j++) {
-                for (int i_board = 0; i_board < bh; i_board++) {
-                    for (int j_board = 0; j_board < bw; j_board++) {
-                        if (board_copy1[i_board][j_board] == tmp_word[j]) {
-                            check = Check_Set(j, tmp_len, i_board, j_board, board_copy1, bh, bw, tmp_word);
-                            int tekPeres = 0;
-                            tekPeres = peres;
-                            peres = 0;
-                            if (tekPeres > max_peres && check >= 0) {
-                                max_peres = tekPeres;
-                                if (check == 1) {
-                                    tmp_i = i_board - j;
-                                    tmp_j = j_board;
-                                    orient = 1;
-
-                                }
-                                else {
-                                    tmp_i = i_board;
-                                    tmp_j = j_board - j;
-                                    orient = 0;
+                                    }
+                                    else {
+                                        tmp_i = i_board;
+                                        tmp_j = j_board - j;
+                                        orient = 0;
+                                    }
                                 }
                             }
                         }
                     }
                 }
-            }
-            if ((tmp_i != 0) && (tmp_j != 0)) {
-                for (int l = 0; tmp_word[l] != NULL; l++) {
-                    if (orient == 1) {
-                        board_copy1[tmp_i + l][tmp_j] = tmp_word[l];
+                if ((tmp_i != 0) && (tmp_j != 0)) {
+                    for (int l = 0; tmp_word[l] != NULL; l++) {
+                        if (orient == 1) {
+                            board_copy1[tmp_i + l][tmp_j] = tmp_word[l];
+                        }
+                        else {
+                            board_copy1[tmp_i][tmp_j + l] = tmp_word[l];
+                        }
                     }
-                    else {
-                        board_copy1[tmp_i][tmp_j + l] = tmp_word[l];
-                    }
-                }
-                deleteNode(root_copy, tmp_word);
+                    char cpy_of_tmp_word[20];
+                    strcpy(cpy_of_tmp_word, tmp_word);
+                    root_copy = deleteNode(root_copy, tmp_word);
+                    strcpy(tmp_word, cpy_of_tmp_word);
 
-                crossing += max_peres;
-                max_peres = 0;
+                    crossing += max_peres;
+                    max_peres = 0;
+                }
+            }
+            else {
+                break;
             }
         }
         copy_board(board_copy1, board_copy, bh, bw);
@@ -472,168 +487,194 @@ int min_cross_max_area(int words_count, TrieNode* root, char** board, int bh, in
     char* tmp_word;
     tmp_word = &(tmp_root->word);
     for (int k = 0; k < words_count; k++, tmp_word = findNextWord(tmp_root, tmp_word)) {
-        int area = 0;
-        int score = 0;
-        char** board_copy = malloc(bh * sizeof(char*));
-        if (board != NULL)
-        {
-            size_t i = 0;
-            for (i; i < bw; i++) {
-                board_copy[i] = malloc(bw * sizeof(char));
+        if (tmp_word != NULL) {
+            int area = 0;
+            int score = 0;
+            char** board_copy = malloc(bh * sizeof(char*));
+            if (board != NULL)
+            {
+                size_t i = 0;
+                for (i; i < bw; i++) {
+                    board_copy[i] = malloc(bw * sizeof(char));
 
-                for (int j = 0; j < bw; j++) {
-                    board_copy[i][j] = ' ';
+                    for (int j = 0; j < bw; j++) {
+                        board_copy[i][j] = ' ';
+                    }
                 }
             }
-        }
-        int flag_orient = 1;
-        //tmp_word = findNextWord(tmp_root, tmp_word);
-        for (int j = 0; j < strlen(tmp_word); j++) {
-            board_copy[(bh - strlen(tmp_word)) / 2 + j][bw / 2] = tmp_word[j];
-        }
-        ////////////////TROUBLE/////////////////////////////////////////////////
+            int flag_orient = 1;
+            //tmp_word = findNextWord(tmp_root, tmp_word);
+            for (int j = 0; j < strlen(tmp_word); j++) {
+                board_copy[(bh - strlen(tmp_word)) / 2 + j][bw / 2] = tmp_word[j];
+            }
+            ////////////////TROUBLE/////////////////////////////////////////////////
 
-        char wrd_for_delete[100];
-        strcpy(wrd_for_delete, tmp_word);
-        tmp_root = deleteNode(tmp_root, wrd_for_delete);
-        strcpy(tmp_word, wrd_for_delete);
+            char wrd_for_delete[100];
+            strcpy(wrd_for_delete, tmp_word);
+            tmp_root = deleteNode(tmp_root, wrd_for_delete);
+            strcpy(tmp_word, wrd_for_delete);
 
-        /*РЕШИТЬ ПРОБЛЕМУ:
-        слово tmp_word удаляется (так и должно быть), но мы должны взять следующее слово за текущим tmp.
-        можно оставить эту же конструкцию, но перезаписать wrd_for_delete в tmp
-        */
+            /*РЕШИТЬ ПРОБЛЕМУ:
+            после удаления слова альбинизм не может найти следующее слово (тк у следующего после альбинизма
+            указатели на правое и левое дерево NULL, чего, вообще-то быть не должно).
+            */
 
-        /////////////////////////////////////////////////////////////////////////
-        score = set_board(words_count, tmp_root, board_copy, bh, bw, 0);
-        area = findCrosswordArea(board_copy, bh, bw);
-        if (score <= best_score_min && area > max_area) {
-            best_score_min = score;
-            max_area = area;
-            copy_board(board_copy, board, bh, bw);
+            /////////////////////////////////////////////////////////////////////////
+            score = set_board(words_count, tmp_root, board_copy, bh, bw, 0);
+            area = findCrosswordArea(board_copy, bh, bw);
+            if (score <= best_score_min && area > max_area) {
+                best_score_min = score;
+                max_area = area;
+                copy_board(board_copy, board, bh, bw);
+            }
+            else {
+                free_board(board_copy, bh);
+            }
         }
         else {
-            free_board(board_copy, bh);
+            return;
         }
     }
     //return min_crossing;
 }
 int min_cross_min_area(int words_count, TrieNode* root, char** board, int bh, int bw) {
     int ind = 0;
-
     TrieNode* tmp_root = NULL;
     tmp_root = copyTree(root);
     char* tmp_word;
-    tmp_word = tmp_root->word;
+    tmp_word = &(tmp_root->word);
     for (int k = 0; k < words_count; k++, tmp_word = findNextWord(tmp_root, tmp_word)) {
-        int area = 0;
-        int score = 0;
-        char** board_copy = malloc(bh * sizeof(char*));
-        if (board != NULL)
-        {
-            size_t i = 0;
-            for (i; i < bw; i++) {
-                board_copy[i] = malloc(bw * sizeof(char));
+        if (tmp_word != NULL) {
+            int area = 0;
+            int score = 0;
+            char** board_copy = malloc(bh * sizeof(char*));
+            if (board != NULL)
+            {
+                size_t i = 0;
+                for (i; i < bw; i++) {
+                    board_copy[i] = malloc(bw * sizeof(char));
 
-                for (int j = 0; j < bw; j++) {
-                    board_copy[i][j] = ' ';
+                    for (int j = 0; j < bw; j++) {
+                        board_copy[i][j] = ' ';
+                    }
                 }
             }
-        }
-        int flag_orient = 1;
-        for (int j = 0; j < strlen(tmp_word); j++) {
-            board_copy[(bh - strlen(tmp_word)) / 2 + j][bw / 2] = tmp_word[j];
-        }
-        deleteNode(tmp_root, tmp_word);
-        score = set_board(words_count, tmp_root, board_copy, bh, bw, 0);
-        area = findCrosswordArea(board_copy, bh, bw);
-        if (score <= best_score_min && area < min_area) {
-            if (score >= words_count / 2) {
-                best_score_min = score;
-                min_area = area;
-                copy_board(board_copy, board, bh, bw);
+            int flag_orient = 1;
+            for (int j = 0; j < strlen(tmp_word); j++) {
+                board_copy[(bh - strlen(tmp_word)) / 2 + j][bw / 2] = tmp_word[j];
+            }
+            char wrd_for_delete[100];
+            strcpy(wrd_for_delete, tmp_word);
+            tmp_root = deleteNode(tmp_root, wrd_for_delete);
+            strcpy(tmp_word, wrd_for_delete);
+            score = set_board(words_count, tmp_root, board_copy, bh, bw, 0);
+            area = findCrosswordArea(board_copy, bh, bw);
+            if (score <= best_score_min && area < min_area) {
+                if (score >= words_count / 2) {
+                    best_score_min = score;
+                    min_area = area;
+                    copy_board(board_copy, board, bh, bw);
+                }
+            }
+            else {
+                free_board(board_copy, bh);
             }
         }
         else {
-            free_board(board_copy, bh);
+            return;
         }
     }
 }
 int max_crossing = 0;
 int max_cross_max_area(int words_count, TrieNode* root, char** board, int bh, int bw) {
     int ind = 0;
-
     TrieNode* tmp_root = NULL;
     tmp_root = copyTree(root);
     char* tmp_word;
-    tmp_word = tmp_root->word;
+    tmp_word = &(tmp_root->word);
     for (int k = 0; k < words_count; k++, tmp_word = findNextWord(tmp_root, tmp_word)) {
-        int area = 0;
-        int score = 0;
-        char** board_copy = malloc(bh * sizeof(char*));
-        if (board != NULL)
-        {
-            size_t i = 0;
-            for (i; i < bw; i++) {
-                board_copy[i] = malloc(bw * sizeof(char));
+        if (tmp_word != NULL) {
+            int area = 0;
+            int score = 0;
+            char** board_copy = malloc(bh * sizeof(char*));
+            if (board != NULL)
+            {
+                size_t i = 0;
+                for (i; i < bw; i++) {
+                    board_copy[i] = malloc(bw * sizeof(char));
 
-                for (int j = 0; j < bw; j++) {
-                    board_copy[i][j] = ' ';
+                    for (int j = 0; j < bw; j++) {
+                        board_copy[i][j] = ' ';
+                    }
                 }
             }
-        }
-        int flag_orient = 1;
-        for (int j = 0; j < strlen(tmp_word); j++) {
-            board_copy[(bh - strlen(tmp_word)) / 2 + j][bw / 2] = tmp_word[j];
-        }
-        deleteNode(tmp_root, tmp_word);
-        score = set_board(words_count, tmp_root, board_copy, bh, bw, 0);
-        area = findCrosswordArea(board_copy, bh, bw);
-        if (score >= best_score_max && area > max_area) {
-            best_score_max = score;
-            max_area = area;
-            copy_board(board_copy, board, bh, bw);
+            int flag_orient = 1;
+            for (int j = 0; j < strlen(tmp_word); j++) {
+                board_copy[(bh - strlen(tmp_word)) / 2 + j][bw / 2] = tmp_word[j];
+            }
+            char wrd_for_delete[100];
+            strcpy(wrd_for_delete, tmp_word);
+            tmp_root = deleteNode(tmp_root, wrd_for_delete);
+            strcpy(tmp_word, wrd_for_delete);
+            score = set_board(words_count, tmp_root, board_copy, bh, bw, 0);
+            area = findCrosswordArea(board_copy, bh, bw);
+            if (score >= best_score_max && area > max_area) {
+                best_score_max = score;
+                max_area = area;
+                copy_board(board_copy, board, bh, bw);
+            }
+            else {
+                free_board(board_copy, bh);
+            }
         }
         else {
-            free_board(board_copy, bh);
+            return;
         }
     }
 }
 int max_cross_min_area(int words_count, TrieNode* root, char** board, int bh, int bw) {
     int ind = 0;
-
     TrieNode* tmp_root = NULL;
     tmp_root = copyTree(root);
     char* tmp_word;
-    tmp_word = tmp_root->word;
+    tmp_word = &(tmp_root->word);
     for (int k = 0; k < words_count; k++, tmp_word = findNextWord(tmp_root, tmp_word)) {
-        int area = 0;
-        int score = 0;
-        char** board_copy = malloc(bh * sizeof(char*));
-        if (board != NULL)
-        {
-            size_t i = 0;
-            for (i; i < bw; i++) {
-                board_copy[i] = malloc(bw * sizeof(char));
+        if (tmp_word != NULL) {
+            int area = 0;
+            int score = 0;
+            char** board_copy = malloc(bh * sizeof(char*));
+            if (board != NULL)
+            {
+                size_t i = 0;
+                for (i; i < bw; i++) {
+                    board_copy[i] = malloc(bw * sizeof(char));
 
-                for (int j = 0; j < bw; j++) {
-                    board_copy[i][j] = ' ';
+                    for (int j = 0; j < bw; j++) {
+                        board_copy[i][j] = ' ';
+                    }
                 }
             }
-        }
-        int flag_orient = 1;
-        for (int j = 0; j < strlen(tmp_word); j++) {
-            board_copy[(bh - strlen(tmp_word)) / 2 + j][bw / 2] = tmp_word[j];
-        }
-        deleteNode(tmp_root, tmp_word);
-        score = set_board(words_count, tmp_root, board_copy, bh, bw, 0);
-        area = findCrosswordArea(board_copy, bh, bw);
-        if (score >= best_score_max && area < min_area) {
-            best_score_max = score;
-            min_area = area;
-            copy_board(board_copy, board, bh, bw);
+            int flag_orient = 1;
+            for (int j = 0; j < strlen(tmp_word); j++) {
+                board_copy[(bh - strlen(tmp_word)) / 2 + j][bw / 2] = tmp_word[j];
+            }
+            char wrd_for_delete[100];
+            strcpy(wrd_for_delete, tmp_word);
+            tmp_root = deleteNode(tmp_root, wrd_for_delete);
+            strcpy(tmp_word, wrd_for_delete);
+            score = set_board(words_count, tmp_root, board_copy, bh, bw, 0);
+            area = findCrosswordArea(board_copy, bh, bw);
+            if (score >= best_score_max && area < min_area) {
+                best_score_max = score;
+                min_area = area;
+                copy_board(board_copy, board, bh, bw);
+            }
+            else {
+                free_board(board_copy, bh);
+            }
         }
         else {
-            free_board(board_copy, bh);
+            return;
         }
     }
 }

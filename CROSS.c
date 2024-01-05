@@ -120,24 +120,17 @@ TrieNode* deleteNode(TrieNode* root, char* wrd) {
         if (root->left == NULL && root->right == NULL) {
             // Проверяем, является ли удаляемый узел листом (удаляем, если да)
             temp = root;
-            //free(root);
             root = NULL;
-            //return temp->parent;
         }
         else if (root->left == NULL) {
             // Если удаляемый узел имеет только правого потомка
             temp = root;
             if (root->parent != NULL) {
                 root->parent->left = root->right;
-                //return root->parent;
             }
             else {
                 root = root->right;
-                //return root;
             }
-            //root = root->right; //меняем указатель на корень на указатель правого потомка
-
-            //free(temp);
         }
         else if (root->right == NULL) {
             // Если удаляемый узел имеет только левого потомка
@@ -147,7 +140,6 @@ TrieNode* deleteNode(TrieNode* root, char* wrd) {
             }
             else {
                 root = root->left;
-                //return root;
             }
         }
         else {
@@ -198,7 +190,6 @@ TrieNode* copyTree(TrieNode* from) {
             }
 
             return newTree;
-
         }
     }
 }
@@ -330,7 +321,7 @@ int Check_Set(int pos, int len, int i_board, int j_board, char** board_copy1, in
     return -1;
 }
 
-int set_board(int words_count, struct TrieNode* root, char** board_copy, int bh, int bw, int flag) {
+int set_board(struct TrieNode* root, char** board_copy, int bh, int bw, int flag) {
 
     int check = 0;
     char* board_copy1_i;      /////new
@@ -349,12 +340,9 @@ int set_board(int words_count, struct TrieNode* root, char** board_copy, int bh,
     }
     int crossing = 0;
     char* tmp_word; //строка с текущим словом
-    int k = 0;
 
-    ////////////// ПОЧТИ ПОРАВИЛА ///////////////////////////////////////////////////////////////////////
-    for (tmp_word = findFirstWord(root_copy); k < words_count; tmp_word = findNextWord(root_copy, tmp_word)) {
+    for (tmp_word = findFirstWord(root_copy); ; tmp_word = findNextWord(root_copy, tmp_word)) {
         if (tmp_word != NULL) {
-            //идет на юрисдикцию в начале цикла фор, хотя, по хорошему должен идти в самый левый узел
             int tmp_i = 0;
             int tmp_j = 0;
             int orient = -1;
@@ -411,7 +399,6 @@ int set_board(int words_count, struct TrieNode* root, char** board_copy, int bh,
                     max_peres = 0;
                 }
             }
-            k++;              //new не влияет на результат (нужно ли ???)
         }
         else {
             break;
@@ -425,14 +412,14 @@ int set_board(int words_count, struct TrieNode* root, char** board_copy, int bh,
 /* ПЛОЩАДИ И ПЕРЕСЕЧЕНИЯ */
 int min_crossing = 1300;
 int max_crossing = 0;
-int cross_area(int words_count, TrieNode* root, char** board, int bh, int bw, int option) {
+int cross_area(TrieNode* root, char** board, int bh, int bw, int option) {
     int ind = 0;
     TrieNode* tmp_root = NULL;
     tmp_root = copyTree(root);
     char* tmp_word;
     tmp_word = &(tmp_root->word);
 
-    for (int k = 0; k < words_count; k++, tmp_word = findNextWord(tmp_root, tmp_word)) {
+    for (; ; tmp_word = findNextWord(tmp_root, tmp_word)) {
         if (tmp_word != NULL) {
             int area = 0;
             int score = 0;
@@ -459,7 +446,7 @@ int cross_area(int words_count, TrieNode* root, char** board, int bh, int bw, in
             strcpy(wrd_for_delete, tmp_word);
             tmp_root = deleteNode(tmp_root, wrd_for_delete);
             strcpy(tmp_word, wrd_for_delete);
-            score = set_board(words_count, tmp_root, board_copy, bh, bw, 0);
+            score = set_board(tmp_root, board_copy, bh, bw, 0);
             area = findCrosswordArea(board_copy, bh, bw);
 
             switch (option) {
@@ -474,7 +461,7 @@ int cross_area(int words_count, TrieNode* root, char** board, int bh, int bw, in
                 }
                 break;
             case 2:
-                if (score <= best_score_min && area < min_area && score >= words_count >> 1) {   ////new (заменили деление на бинарный сдвиг)        
+                if (score <= best_score_min && area < min_area) {
                     best_score_min = score;
                     min_area = area;
                     copy_board(board_copy, board, bh, bw);
@@ -512,22 +499,22 @@ int cross_area(int words_count, TrieNode* root, char** board, int bh, int bw, in
 }
 
 /* МИНИМАЛЬНЫЕ ПЕРЕСЕЧЕНИЯ */
-int find_min_crossing(int words_count, TrieNode* root, char** board, int bh, int bw, int flag) {
+int find_min_crossing(TrieNode* root, char** board, int bh, int bw, int flag) {
     if (flag == 1) {
-        cross_area(words_count, root, board, bh, bw, 1);
+        cross_area(root, board, bh, bw, 1);
     }
     else {
-        cross_area(words_count, root, board, bh, bw, 2);
+        cross_area(root, board, bh, bw, 2);
     }
 }
 /* МАКСИМАЛЬНЫЕ ПЕРЕСЕЧЕНИЯ */
-int find_max_crossing(int words_count, TrieNode* root, char** board, int bh, int bw, int flag) {
+int find_max_crossing(TrieNode* root, char** board, int bh, int bw, int flag) {
     if (flag == 1) {
-        cross_area(words_count, root, board, bh, bw, 3);
+        cross_area(root, board, bh, bw, 3);
 
     }
     else {
-        cross_area(words_count, root, board, bh, bw, 4);
+        cross_area(root, board, bh, bw, 4);
     }
 }
 
@@ -591,7 +578,7 @@ int main() {
     setlocale(0, "Russian");
     srand((unsigned)time(NULL));
 
-    int WordsCount = 1, max_len = 0, min_len = 100000;
+    int max_len = 0, min_len = 100000;
     char tmp[90];
 
     file = fopen("cross.txt", "r");
@@ -600,15 +587,6 @@ int main() {
         printf("ERROR: read from file.");
         return 0;
     }
-
-    char c;
-    while (!feof(file)) {
-        c = fgetc(file);
-        if (c == '\n')
-            WordsCount++;
-    }
-    rewind(file);
-    char wrd;
 
     /* заполнение словаря */
     TrieNode* root = NULL; // создание корневого узла
@@ -624,9 +602,6 @@ int main() {
         root = insert(root, tmp); // вставка слова в префиксное дерево
     }
     root->parent = NULL;
-    rewind(file);
-    /*char* buf[256];
-    printWords(root, buf, 0);*/
 
     /* высчитывание длины каждого из слов в словаре */
 
@@ -661,24 +636,24 @@ int main() {
 
     if (inter[0] == 'm' && inter[1] == 'i' && inter[2] == 'n') {
         if (area[0] == 'm' && area[1] == 'a' && area[2] == 'x') {
-            find_min_crossing(WordsCount, root, board, bh, bw, 1);
+            find_min_crossing(root, board, bh, bw, 1);
             printf("Count crossings: %d\n", best_score_min);
             printf("Puzzle size: %d\n", findCrosswordArea(board, bh, bw));
         }
         if (area[0] == 'm' && area[1] == 'i' && area[2] == 'n') {
-            find_min_crossing(WordsCount, root, board, bh, bw, 0);
+            find_min_crossing(root, board, bh, bw, 0);
             printf("Count crossings: %d\n", best_score_min);
             printf("Puzzle size: %d\n", findCrosswordArea(board, bh, bw));
         }
     }
     if (inter[0] == 'm' && inter[1] == 'a' && inter[2] == 'x') {
         if (area[0] == 'm' && area[1] == 'a' && area[2] == 'x') {
-            find_max_crossing(WordsCount, root, board, bh, bw, 1);
+            find_max_crossing(root, board, bh, bw, 1);
             printf("Count crossings: %d\n", best_score_max);
             printf("Puzzle size: %d\n", findCrosswordArea(board, bh, bw));
         }
         if (area[0] == 'm' && area[1] == 'i' && area[2] == 'n') {
-            find_max_crossing(WordsCount, root, board, bh, bw, 0);
+            find_max_crossing(root, board, bh, bw, 0);
             printf("Count crossings: %d\n", best_score_max);
             printf("Puzzle size: %d\n", findCrosswordArea(board, bh, bw));
         }

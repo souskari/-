@@ -11,7 +11,7 @@
 // ќпределение размера алфавита
 #define ALPHABET_SIZE 26
 
-int bh = 100; int bw = 100; int min_peres = 10; int peres = 0; int max_peres = 0; int best_score_min = 1000; int best_score_max = 0; int max_area = 0; int min_area = 100000;
+int bh = 100; int min_peres = 10; int peres = 0; int max_peres = 0; int best_score_min = 1000; int best_score_max = 0; int max_area = 0; int min_area = 100000;
 
 FILE* file;
 
@@ -204,12 +204,12 @@ char* findFirstWord(struct TrieNode* root) {
 ///////////////////////////////////////
 
 /* ¬—ѕќћќ√ј“≈Ћ№Ќџ≈ ƒЋя Ћќ√» » */
-int findCrosswordArea(char** cross, int bh, int bw) {
+int findCrosswordArea(char** cross, int bh) {
     int startX = -1, startY = -1, endX = -1, endY = -1;
-    char* cross_i;       ///new
+    char* cross_i;                     ///new
     for (int i = 0; i < bh; i++) {
-        cross_i = cross[i];   ///new   (вынос инварианта (индексации))
-        for (int j = 0; j < bw; j++) {
+        cross_i = cross[i];            ///new   вынос инварианта
+        for (int j = 0; j < bh; j++) {
             if (cross_i[j] != ' ') {   ///new
                 startX = endX = i;
                 startY = endY = j;
@@ -219,8 +219,8 @@ int findCrosswordArea(char** cross, int bh, int bw) {
         if (startX != -1) break;
     }
     for (int i = 0; i < bh; i++) {
-        cross_i = cross[i];   ///new  (вынос инварианта (индексации))
-        for (int j = 0; j < bw; j++) {
+        cross_i = cross[i];            ///new  вынос инварианта
+        for (int j = 0; j < bh; j++) {
             if (cross_i[j] != ' ') {   ///new
                 if (i < startX) startX = i;
                 if (j < startY) startY = j;
@@ -233,33 +233,32 @@ int findCrosswordArea(char** cross, int bh, int bw) {
     int height = endX - startX + 1;
     return width * height;
 }
-void copy_board(char** board_copy, char** board, int bh, int bw) {
-    //for (int i = 0; i < bh; i++) {
-    for (int i = 0; i < bh; i += 2) {
-        memcpy(board[i], board_copy[i], bw * sizeof(char));  /////new  (отказ от цикла)
-        memcpy(board[i + 1], board_copy[i + 1], bw * sizeof(char));  /////new   ???( развЄртка цикла, не уверена что это лучше, у нас bh - чЄтное, поэтому работает)???
+void copy_board(char** board_copy, char** board, int bh) {
+    for (int i = 0; i < bh; i++) {
+        memcpy(board[i], board_copy[i], bh * sizeof(char));  ///new  отказ от цикла
     }
 }
 void free_board(char** board, int bh) {
     for (int i = 0; i < bh; i++) {
-        free(board[i]);     //new (аналогичный вопрос с развЄрткой цикла)
+        free(board[i]);
     }
     free(board);
 }
-int Check_Set(int pos, int len, int i_board, int j_board, char** board_copy1, int bh, int bw, char* str) {
+
+int Check_Set(int pos, int len, int i_board, int j_board, char** board_copy1, int bh, char* str) {
     int gorizont = 1;
     int vertical = 1;
     int tek_pos_i = i_board - pos;
     int tek_pos_j = j_board - pos;
     int gperes = 0;
     int vperes = 0;
-    char* board_copy1_i = board_copy1[i_board];   ///new (вынос инварианта (индексаци€))
+    char* board_copy1_i = board_copy1[i_board];   ///new  вынос инварианта
 
-    if (j_board - pos + len + 1 < bw && tek_pos_j > 0 && i_board > 0 && (board_copy1_i[tek_pos_j + len] == ' ' && board_copy1_i[tek_pos_j - 1] == ' ')) {
+    if (j_board - pos + len + 1 < bh && tek_pos_j > 0 && i_board > 0 && (board_copy1_i[tek_pos_j + len] == ' ' && board_copy1_i[tek_pos_j - 1] == ' ')) {
         for (int i = 0; i < len && gorizont; i++) {
-            int tek_pos_j_i = tek_pos_j + i;      /////new  (вынесение общих операций)
+            int tek_pos_j_i = tek_pos_j + i;      ///new  вынесение общих операций
             if (board_copy1_i[tek_pos_j_i] == ' ' || board_copy1_i[tek_pos_j_i] == str[i]) { //если место куда хотим поставить очередную букву\
-                                                                                                                пустое или совпадает с этой буквой
+                                                                                                                                пустое или совпадает с этой буквой
                 if (board_copy1_i[tek_pos_j_i] == str[i]) { //если совпадает с буквой, то плюсуем пересечени€
                     gperes++;
                 }
@@ -286,7 +285,7 @@ int Check_Set(int pos, int len, int i_board, int j_board, char** board_copy1, in
     }
     if (i_board - pos + len + 1 < bh && tek_pos_i > 0 && tek_pos_j > 0 && (board_copy1[tek_pos_i + len][j_board] == ' ' && board_copy1[tek_pos_i - 1][j_board] == ' ')) {
         for (int i = 0; i < len && vertical; i++) {
-            board_copy1_i = board_copy1[tek_pos_i + i];    /////new     (вынесение общих операций)
+            board_copy1_i = board_copy1[tek_pos_i + i];    ///new     вынесение общих операций
             if (board_copy1_i[j_board] == ' ' || board_copy1_i[j_board] == str[i]) {
                 if (board_copy1_i[j_board] == str[i]) {
                     vperes++;
@@ -321,7 +320,7 @@ int Check_Set(int pos, int len, int i_board, int j_board, char** board_copy1, in
     return -1;
 }
 
-int set_board(struct TrieNode* root, char** board_copy, int bh, int bw, int flag) {
+int set_board(struct TrieNode* root, char** board_copy, int bh, int flag) {
 
     int check = 0;
     char* board_copy1_i;      /////new
@@ -333,9 +332,9 @@ int set_board(struct TrieNode* root, char** board_copy, int bh, int bw, int flag
     if (board_copy != NULL)
     {
         size_t i = 0;
-        for (i; i < bw; i++) {
-            board_copy1[i] = malloc(bw * sizeof(char));
-            memcpy(board_copy1[i], board_copy[i], bh * sizeof(char));  /////new  (отказ от цикла) + помен€ла на bh, не оптимизаци€
+        for (i; i < bh; i++) {
+            board_copy1[i] = malloc(bh * sizeof(char));
+            memcpy(board_copy1[i], board_copy[i], bh * sizeof(char));  ///new  отказ от цикла
         }
     }
     int crossing = 0;
@@ -350,11 +349,11 @@ int set_board(struct TrieNode* root, char** board_copy, int bh, int bw, int flag
             int tmp_len = strlen(tmp_word);
             for (int j = 0; j < tmp_len; j++) {
                 for (int i_board = 0; i_board < bh; i_board++) {
-                    board_copy1_i = board_copy1[i_board];                  //////////new   (вынос инварианта (индексаци€))
-                    for (int j_board = 0; j_board < bw; j_board++) {
-                        if (board_copy1_i[j_board] == tmp_word[j]) {       //////////new
-                            check = Check_Set(j, tmp_len, i_board, j_board, board_copy1, bh, bw, tmp_word);
-                            int tekPeres = peres;                          //////////new   (удаление лишнего кода - повторное присваивание)
+                    board_copy1_i = board_copy1[i_board];                  ///new   вынос инварианта
+                    for (int j_board = 0; j_board < bh; j_board++) {
+                        if (board_copy1_i[j_board] == tmp_word[j]) {       ///new
+                            check = Check_Set(j, tmp_len, i_board, j_board, board_copy1, bh, tmp_word);
+                            int tekPeres = peres;                          ///new   удаление лишнего кода - повторное присваивание
                             /*  заменили с этого:  int tekPeres = 0;
                                                    tekPeres = peres;  */
                             peres = 0;
@@ -400,11 +399,10 @@ int set_board(struct TrieNode* root, char** board_copy, int bh, int bw, int flag
                 }
             }
         }
-        else {
+        else
             break;
-        }
     }
-    copy_board(board_copy1, board_copy, bh, bw);
+    copy_board(board_copy1, board_copy, bh);
 
     return crossing;
 }
@@ -412,7 +410,7 @@ int set_board(struct TrieNode* root, char** board_copy, int bh, int bw, int flag
 /* ѕЋќўјƒ» » ѕ≈–≈—≈„≈Ќ»я */
 int min_crossing = 1300;
 int max_crossing = 0;
-int cross_area(TrieNode* root, char** board, int bh, int bw, int option) {
+int cross_area(TrieNode* root, char** board, int bh, int option) {
     int ind = 0;
     TrieNode* tmp_root = NULL;
     tmp_root = copyTree(root);
@@ -427,34 +425,34 @@ int cross_area(TrieNode* root, char** board, int bh, int bw, int option) {
             if (board != NULL)
             {
                 size_t i = 0;
-                for (i; i < bw; i++) {                             //точно ли в двух циклах надо писать bw ?
-                    board_copy[i] = malloc(bw * sizeof(char));
-                    memset(board_copy[i], ' ', bw * sizeof(char));        ////new   (отказ от цикла)
+                for (i; i < bh; i++) {
+                    board_copy[i] = malloc(bh * sizeof(char));
+                    memset(board_copy[i], ' ', bh * sizeof(char));        ///new   отказ от цикла
                 }
             }
             int flag_orient = 1;
-            int bw__ = bw >> 1;          ///new   (вынос инварианта + сдвиг вместо /)
-            for (int j = 0, j1 = ((bh - strlen(tmp_word)) >> 1); j < strlen(tmp_word); j++, j1++) {  //new   (замена переменной + сдвиг вместо /)
-                /*                                                                                   //new   (удаление лишнего кода - условно-недостижимый код)
+            int bh__ = bh >> 1;          ///new  вынос инварианта + сдвиг вместо /
+            for (int j = 0, j1 = ((bh - strlen(tmp_word)) >> 1); j < strlen(tmp_word); j++, j1++) {  ///new   замена переменной + сдвиг вместо /
+                /*                                                                                   ///new   удаление лишнего кода - условно-недостижимый код
                 if (flag_orient == 0) {  (это было)
-                    board_copy[bh / 2][(bw - len_of_words[ind]) / 2 + j] = str[ind][j];
+                    board_copy[bh / 2][(bh - len_of_words[ind]) / 2 + j] = str[ind][j];
                 }
                 */
-                board_copy[j1][bw__] = tmp_word[j];    ///new
+                board_copy[j1][bh__] = tmp_word[j];    ///new
             }
             char wrd_for_delete[100];
             strcpy(wrd_for_delete, tmp_word);
             tmp_root = deleteNode(tmp_root, wrd_for_delete);
             strcpy(tmp_word, wrd_for_delete);
-            score = set_board(tmp_root, board_copy, bh, bw, 0);
-            area = findCrosswordArea(board_copy, bh, bw);
+            score = set_board(tmp_root, board_copy, bh, 0);
+            area = findCrosswordArea(board_copy, bh);
 
             switch (option) {
             case 1:
                 if (score <= best_score_min && area > max_area) {
                     best_score_min = score;
                     max_area = area;
-                    copy_board(board_copy, board, bh, bw);
+                    copy_board(board_copy, board, bh);
                 }
                 else {
                     free_board(board_copy, bh);
@@ -464,7 +462,7 @@ int cross_area(TrieNode* root, char** board, int bh, int bw, int option) {
                 if (score <= best_score_min && area < min_area) {
                     best_score_min = score;
                     min_area = area;
-                    copy_board(board_copy, board, bh, bw);
+                    copy_board(board_copy, board, bh);
                 }
                 else {
                     free_board(board_copy, bh);
@@ -474,7 +472,7 @@ int cross_area(TrieNode* root, char** board, int bh, int bw, int option) {
                 if (score >= best_score_max && area > max_area) {
                     best_score_max = score;
                     max_area = area;
-                    copy_board(board_copy, board, bh, bw);
+                    copy_board(board_copy, board, bh);
                 }
                 else {
                     free_board(board_copy, bh);
@@ -484,7 +482,7 @@ int cross_area(TrieNode* root, char** board, int bh, int bw, int option) {
                 if (score >= best_score_max && area < min_area) {
                     best_score_max = score;
                     min_area = area;
-                    copy_board(board_copy, board, bh, bw);
+                    copy_board(board_copy, board, bh);
                 }
                 else {
                     free_board(board_copy, bh);
@@ -492,29 +490,27 @@ int cross_area(TrieNode* root, char** board, int bh, int bw, int option) {
                 break;
             }
         }
-        else {
+        else
             return;
-        }
     }
 }
 
 /* ћ»Ќ»ћјЋ№Ќџ≈ ѕ≈–≈—≈„≈Ќ»я */
-int find_min_crossing(TrieNode* root, char** board, int bh, int bw, int flag) {
+int find_min_crossing(TrieNode* root, char** board, int bh, int flag) {
     if (flag == 1) {
-        cross_area(root, board, bh, bw, 1);
+        cross_area(root, board, bh, 1);
     }
     else {
-        cross_area(root, board, bh, bw, 2);
+        cross_area(root, board, bh, 2);
     }
 }
 /* ћј —»ћјЋ№Ќџ≈ ѕ≈–≈—≈„≈Ќ»я */
-int find_max_crossing(TrieNode* root, char** board, int bh, int bw, int flag) {
+int find_max_crossing(TrieNode* root, char** board, int bh, int flag) {
     if (flag == 1) {
-        cross_area(root, board, bh, bw, 3);
-
+        cross_area(root, board, bh, 3);
     }
     else {
-        cross_area(root, board, bh, bw, 4);
+        cross_area(root, board, bh, 4);
     }
 }
 
@@ -545,20 +541,20 @@ void Colorize(int x, int y, char* symbol) {
     glPopMatrix();
 }
 
-void print_Board(char** board2, char** board, int bh, int bw) {
+void print_Board(char** board2, char** board, int bh) {
     char* board_i;
-    for (int i = 0, i1 = bh + 1; i < bh; i++, i1--) {    ///new  (замена переменной)
-        board_i = board[i];                              ///new   (вынос инварианта (индексаци€))
-        for (int j = 0; j < bw; j += 2) {    ///new   (развЄртка цикла   убрать???)
+    for (int i = 0, i1 = bh + 1; i < bh; i++, i1--) {    ///new  замена переменной
+        board_i = board[i];                              ///new   вынос инварианта
+        for (int j = 0; j < bh; j += 2) {    ///new   развЄртка цикла
             board2[j][i1] = board_i[j];      ///new
             board2[j + 1][i1] = board_i[j + 1];
         }
     }
     glLoadIdentity();
-    glScalef(3.0 / bw, 3.0 / bh, 1);
-    glTranslatef(-bw * 0.7, -bh * 0.4, 0);
+    glScalef(3.0 / bh, 3.0 / bh, 1);
+    glTranslatef(-bh * 0.7, -bh * 0.4, 0);
     for (int j = 0; j < bh; j++) {
-        for (int i = 0; i < bw; i++) {
+        for (int i = 0; i < bh; i++) {
             char symbol[2];
             symbol[0] = board2[i][j];
             symbol[1] = '\0';
@@ -591,7 +587,7 @@ int main() {
     /* заполнение словар€ */
     TrieNode* root = NULL; // создание корневого узла
     while (fgets(tmp, sizeof(tmp), file) != NULL) {
-        int len_of_tmp_ = strlen(tmp) - 1;            ////new оптимизаци€ ли ? (-1 убрали из [], но добавили дальше)
+        int len_of_tmp_ = strlen(tmp) - 1;
         if (tmp[len_of_tmp_] == '\n') {
             tmp[len_of_tmp_] = '\0';
         }
@@ -599,7 +595,7 @@ int main() {
             tmp[len_of_tmp_ + 1] = '\0';
         }
         _strupr(tmp);
-        root = insert(root, tmp); // вставка слова в префиксное дерево
+        root = insert(root, tmp); // вставка слова в бинарное дерево
     }
     root->parent = NULL;
 
@@ -610,17 +606,17 @@ int main() {
     {
         size_t i = 0;
         for (i; i < bh; i++) {
-            board[i] = malloc(bw * sizeof(char));
-            memset(board[i], ' ', bw * sizeof(char));        ////new   (отказ от цикла)
+            board[i] = malloc(bh * sizeof(char));
+            memset(board[i], ' ', bh * sizeof(char));        ///new   отказ от цикла
         }
     }
-    char** board2 = malloc(bw * sizeof(char*));
+    char** board2 = malloc(bh * sizeof(char*));
     if (board2 != NULL)
     {
         size_t i = 0;
-        for (i; i < bw; i++) {
+        for (i; i < bh; i++) {
             board2[i] = malloc(bh * sizeof(char));
-            memset(board2[i], ' ', bh * sizeof(char));        ////new   (отказ от цикла)
+            memset(board2[i], ' ', bh * sizeof(char));       ///new   отказ от цикла
         }
     }
     int peres = 0;
@@ -636,26 +632,26 @@ int main() {
 
     if (inter[0] == 'm' && inter[1] == 'i' && inter[2] == 'n') {
         if (area[0] == 'm' && area[1] == 'a' && area[2] == 'x') {
-            find_min_crossing(root, board, bh, bw, 1);
+            find_min_crossing(root, board, bh, 1);
             printf("Count crossings: %d\n", best_score_min);
-            printf("Puzzle size: %d\n", findCrosswordArea(board, bh, bw));
+            printf("Puzzle size: %d\n", findCrosswordArea(board, bh));
         }
         if (area[0] == 'm' && area[1] == 'i' && area[2] == 'n') {
-            find_min_crossing(root, board, bh, bw, 0);
+            find_min_crossing(root, board, bh, 0);
             printf("Count crossings: %d\n", best_score_min);
-            printf("Puzzle size: %d\n", findCrosswordArea(board, bh, bw));
+            printf("Puzzle size: %d\n", findCrosswordArea(board, bh));
         }
     }
     if (inter[0] == 'm' && inter[1] == 'a' && inter[2] == 'x') {
         if (area[0] == 'm' && area[1] == 'a' && area[2] == 'x') {
-            find_max_crossing(root, board, bh, bw, 1);
+            find_max_crossing(root, board, bh, 1);
             printf("Count crossings: %d\n", best_score_max);
-            printf("Puzzle size: %d\n", findCrosswordArea(board, bh, bw));
+            printf("Puzzle size: %d\n", findCrosswordArea(board, bh));
         }
         if (area[0] == 'm' && area[1] == 'i' && area[2] == 'n') {
-            find_max_crossing(root, board, bh, bw, 0);
+            find_max_crossing(root, board, bh, 0);
             printf("Count crossings: %d\n", best_score_max);
-            printf("Puzzle size: %d\n", findCrosswordArea(board, bh, bw));
+            printf("Puzzle size: %d\n", findCrosswordArea(board, bh));
         }
     }
     clock_t end = clock();
@@ -673,7 +669,7 @@ int main() {
         glfwPollEvents();
         glClearColor(0.7f, 1.0f, 0.7f, 0.0f);
         glClear(GL_COLOR_BUFFER_BIT);
-        print_Board(board2, board, bh, bw);
+        print_Board(board2, board, bh);
         glfwSwapBuffers(window);
     }
     glfwTerminate();
